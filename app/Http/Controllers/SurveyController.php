@@ -92,7 +92,7 @@ class SurveyController extends Controller
             DB::beginTransaction();
             foreach ($req->all() as $key => $respuesta) {
                 $answerBD=AnswerOption::find($respuesta['idRespuesta']);
-                $answerBD->usuarios_marcaron()->attach(1);
+                $answerBD->usuarios_marcaron()->attach(3);
             }
             DB::commit();
             return response()->json([

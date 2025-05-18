@@ -66,14 +66,15 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5" id="titleEncuesta"></h1>
+                        
                         <button type="button" class="btn-close" aria-label="Close"
                             id="btnCerrarVentanaEncuesta"></button>
                     </div>
                     <div class="modal-body" id="modalEncuestaBody">
 
                     </div>
-                    <div class="modal-footer" id="modalEncuestaFooter">
-
+                    <div class="modal-footer d-flex justify-content-between" id="modalEncuestaFooter">
+                        <h5 id="cronometro" class="text-start"></h5>
 
                     </div>
                 </div>
@@ -140,8 +141,20 @@
                                     placeholder="Escribe la pregunta aquí" required>
                             </div>
 
+                            <div class="mb-3">
+                                <label class="form-label">Tipo de pregunta</label><br>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="tipoPregunta" id="tipoSiNo" value="si_no">
+                                    <label class="form-check-label" for="tipoSiNo">✔️ Sí / ❌ No</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="tipoPregunta" id="tipoMultiple" value="multiple">
+                                    <label class="form-check-label" for="tipoMultiple">Respuesta múltiple</label>
+                                </div>
+                            </div>
+
                             <!-- Habilitar respuesta correcta -->
-                            <div class="form-check form-switch mb-3">
+                            <div class="form-check form-switch mb-3 d-none" id="divCheckHabilitarRespuestaCorrecta">
                                 <input class="form-check-input" type="checkbox" id="habilitarRespuestaCorrecta"
                                     name="habilitarRespuestaCorrecta">
                                 <label class="form-check-label" for="habilitarRespuestaCorrecta">Habilitar
@@ -149,16 +162,16 @@
                             </div>
 
                             <!-- Opciones de respuesta -->
-                            <div class="mb-2">
+                            <div id="opcionesSiNo" class="mb-2 d-none">
                                 <label class="form-label">Opciones de respuesta</label>
                                 <div class="list-group">
 
                                     <!-- Opción: Sí -->
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>✔️ Sí</div>
-                                        <input type="hidden" name="opciones[0][texto]" value="Si">
+                                        <input type="hidden" class="inputSiNoDisabled" name="opciones[0][texto]" value="Si">
                                         <div class="form-check d-none" id="respuestaCorrectaSi">
-                                            <input class="form-check-input" type="checkbox"
+                                            <input class="form-check-input inputSiNoDisabled checkedClass" type="checkbox"
                                                 name="opciones[0][is_correct]" value="1">
                                             <label class="form-check-label">Correcta</label>
                                         </div>
@@ -167,15 +180,23 @@
                                     <!-- Opción: No -->
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>❌ No</div>
-                                        <input type="hidden" name="opciones[1][texto]" value="No">
+                                        <input type="hidden" name="opciones[1][texto]" class="inputSiNoDisabled" value="No">
                                         <div class="form-check d-none" id="respuestaCorrectaNo">
-                                            <input class="form-check-input" type="checkbox"
+                                            <input class="form-check-input inputSiNoDisabled checkedClass" type="checkbox"
                                                 name="opciones[1][is_correct]" value="1">
                                             <label class="form-check-label">Correcta</label>
                                         </div>
                                     </div>
 
                                 </div>
+                            </div>
+                            <div id="opcionesMultiples" class="mb-2 d-none">
+                                <label class="form-label">Opciones de respuesta</label>
+                                <div id="contenedorOpcionesMultiples" class="list-group mb-2">
+                                    
+
+                                </div>
+                                <button type="button" class="btn btn-secondary" id="btnAgregarOpcionRespuesta">➕ Añadir opción</button>
                             </div>
 
                         </div>
@@ -212,10 +233,17 @@
                                     data-bs-target="#pestana2" type="button" role="tab"
                                     aria-controls="pestana2" aria-selected="false">Resumen</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="pestana3-tab" data-bs-toggle="tab"
+                                    data-bs-target="#pestana3" type="button" role="tab"
+                                    aria-controls="pestana3" aria-selected="false">eeeee</button>
+                            </li>
                         </ul>
 
                         <!-- Contenido de las pestañas -->
                         <div class="tab-content mt-3" id="contenidoPestanas">
+                            
+
                             <div class="container" id="divSelectPreguntas">
 
                             </div>
@@ -238,6 +266,12 @@
                                     </table>
                                 </div>
 
+                            </div>
+                            
+                            <div class="tab-pane fade" id="pestana3" role="tabpanel"
+                                aria-labelledby="pestana3-tab">
+                                <div id="circularChart">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -262,12 +296,16 @@
 
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.12.1/dist/echo.iife.js"></script>
-
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
     <script>
+        
+
         let encuestas = @json($enc);
-        console.log(encuestas);
+        
 
         let respuestasUsuario = [];
+
+        let pregunta = 0;
 
         document.addEventListener('DOMContentLoaded', function() {
 
@@ -277,16 +315,52 @@
             const modalRegistrar = document.getElementById('modalRegistrarEncuesta');
             const modalRegistrarInstance = new bootstrap.Modal(modalRegistrar);
 
-            const modalPreguntas = document.getElementById('modalRegistrarPreguntas');
-            const modalPreguntasInstance = new bootstrap.Modal(modalPreguntas);
+             const divSelectPreguntas = document.getElementById('divSelectPreguntas');
+            
 
             const modalResultadosEncuesta = document.getElementById('modalRespuestasEncuesta');
             const modalResultadosEncuestaInstance = new bootstrap.Modal(modalResultadosEncuesta);
 
             const formRegistrarEncuesta = document.getElementById('formRegistrarEncuesta');
-            const formRegistrarPregunta = document.getElementById('formPregunta');
+            
 
             const selectTipoEncuesta = document.getElementById('tipo');
+
+
+            const cronometro = {
+                tiempoRestante: 0,
+                intervaloId: null,
+                iniciar(minutos, callbackFin) {
+                    this.tiempoRestante = minutos * 60;
+
+                    const cronometroElemento = document.getElementById('cronometro');
+
+                    this.intervaloId = setInterval(() => {
+                        const minutos = Math.floor(this.tiempoRestante / 60);
+                        const segundos = this.tiempoRestante % 60;
+
+                        // Mostrar en formato MM:SS
+                        cronometroElemento.textContent =
+                            `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+
+                        // Cuando se llega a cero
+                        if (this.tiempoRestante <= 0) {
+                            this.stop();
+                            if (typeof callbackFin === 'function') {
+                                callbackFin();
+                            }
+                        }
+
+                        this.tiempoRestante--;
+                    }, 1000);
+                },
+                stop() {
+                    if (this.intervaloId) {
+                        clearInterval(this.intervaloId);
+                        this.intervaloId = null;
+                    }
+                }
+            }
 
 
 
@@ -302,8 +376,14 @@
 
             echo.channel('encuestas')
                 .listen('.EncuestaLanzada', (data) => {
-                    console.log('📡 Encuesta recibida:', data);
-                    mostrarEncuesta(data.encuesta, modalEncuestaInstance);
+                    
+                    document.getElementById('cronometro').textContent = `${data.encuesta.tiempo}:00`;
+                    mostrarEncuesta(data.encuesta, modalEncuestaInstance, cronometro);
+                    cronometro.iniciar(data.encuesta.tiempo, () => {
+                        Swal.fire('Tiempo agotado!', 'El tiempo de la encuesta se ha agotado, tus respuestas no han sido registradas.', 'error');
+                        cerrarModalVentanaEncuesta(modalEncuestaInstance);
+                        
+                    });
                     abrirModalEncuesta(modalEncuestaInstance, data.encuesta);
                 });
 
@@ -319,19 +399,30 @@
             document.getElementById('btnCerrarModalRegistrarEncuesta').addEventListener('click', function() {
                 cerrarModalRegistrarEncuesta(modalRegistrarInstance, formRegistrarEncuesta);
             })
-
-            document.getElementById('btnCerrarModalPregunta').addEventListener('click', function() {
-                cerrarModalFormPregunta(formRegistrarPregunta, modalPreguntasInstance);
-            })
+            
 
             document.getElementById('btnCerrarVentanaEncuesta').addEventListener('click', function() {
                 cerrarModalVentanaEncuesta(modalEncuestaInstance);
+                detenerCronometro(cronometro);
 
             })
 
             document.getElementById('btnRegistrarEncuesta').addEventListener('click', function() {
                 registrar(formRegistrarEncuesta, modalRegistrarInstance);
             });
+
+            document.getElementById('btnCloseModalRespuestas').addEventListener('click', function(){
+                const divSelectPreguntasModalRespuesta = document.getElementById('divSelectPreguntas');
+                const divResultadosPreguntasModalRespuestas = document.getElementById('divResultadosPreguntas');
+                const tbody = document.querySelector('#table-resultados tbody');
+                const divGrafico = document.getElementById('circularChart');
+
+                divSelectPreguntasModalRespuesta.innerHTML = '';
+                divResultadosPreguntasModalRespuestas.innerHTML = '';
+                tbody.innerHTML = '';
+                divGrafico.innerHTML = '';
+                modalResultadosEncuestaInstance.hide();
+            })
 
             document.getElementById('tbodyEncuesta').addEventListener('click', function(e) {
                 if (e.target.closest('.btnAbrirModalPreguntas')) {
@@ -369,11 +460,27 @@
                 }
             })
 
+            
+            
         });
+        
+        function cerrarModalVentanaEncuesta(modalEncuestaInstance) {
+            pregunta = 0;
+            let buttonNext = document.getElementById('btnSiguiente');
+            if (buttonNext) {
+                buttonNext.remove();
+            }
+            
+            modalEncuestaInstance.hide();
+        }
 
-        let pregunta = 0;
+        function detenerCronometro(cronometroInstance){
+            cronometroInstance.stop();
+        }
+        
 
-        function mostrarEncuesta(encuesta, modalEncuestaInstance) {
+        function mostrarEncuesta(encuesta, modalEncuestaInstance, cronometro) {
+            
 
             const modalBody = document.getElementById('modalEncuestaBody');
             modalBody.innerHTML = '';
@@ -436,7 +543,7 @@
                     }
 
                     if (pregunta == encuesta.questions.length - 1) {
-                        enviarEncuesta(modalEncuestaInstance);
+                        enviarEncuesta(modalEncuestaInstance, cronometro);
                         return;
                     }
 
@@ -465,6 +572,8 @@
             });
 
         }
+
+        
 
         function setHabilitarAvanzar(bool) {
             btnAvanzar = document.getElementById('btnSiguiente');
@@ -590,6 +699,8 @@
         async function registrarPregunta(formPregunta, modalPreguntasInstance) {
             const formData = new FormData(formPregunta);
 
+            
+
             // Ahora conviertes todo el formData a un objeto normal
             const datos = Object.fromEntries(formData.entries());
             console.log(datos);
@@ -634,30 +745,14 @@
             }
         }
 
-        function cerrarModalFormPregunta(formPregunta, modalPreguntasInstance) {
-            formPregunta.reset();
-            const respuestaSi = document.getElementById('respuestaCorrectaSi');
-            const respuestaNo = document.getElementById('respuestaCorrectaNo');
-            if (!respuestaSi.classList.contains('d-none')) {
-                respuestaSi.classList.add('d-none');
-                respuestaNo.classList.add('d-none');
-            }
-            modalPreguntasInstance.hide();
-        }
+        
 
         function abrirModalRegistrarPreguntas(id, modalPreguntasInstance) {
             document.getElementById('idEncuesta').value = id;
             modalPreguntasInstance.show();
         }
 
-        function cerrarModalVentanaEncuesta(modalEncuestaInstance) {
-            pregunta = 0;
-            let buttonNext = document.getElementById('btnSiguiente');
-            if (buttonNext) {
-                buttonNext.remove();
-            }
-            modalEncuestaInstance.hide();
-        }
+        
 
         function generateTable(encuestas) {
             const tbody = document.querySelector('#encuestasTable tbody');
@@ -683,7 +778,7 @@
             }
         }
 
-        async function enviarEncuesta(modalEncuestaInstance) {
+        async function enviarEncuesta(modalEncuestaInstance, cronometro) {
             try {
                 const response = await fetch('/encuestas/enviar', {
                     method: 'POST',
@@ -698,7 +793,8 @@
 
                 if (response.ok) {
                     Swal.fire('Gracias!!', responseBody.message, 'success');
-                    modalEncuestaInstance.hide();
+                    detenerCronometro(cronometro);
+                    cerrarModalVentanaEncuesta(modalEncuestaInstance);
                 }
             } catch (error) {
                 console.log(error);
@@ -715,6 +811,7 @@
         }
 
         function abrirModalResultados(modalResultadosEncuestaInstance, resultados) {
+            
             console.log(resultados);
             const divPestana1 = document.getElementById('divSelectPreguntas');
 
@@ -739,13 +836,18 @@
             selectPreguntas.addEventListener('change', function() {
                 const divResultadosPregunta = document.getElementById('divResultadosPreguntas');
                 const tbody = document.querySelector('#table-resultados tbody');
+                const divGrafico = document.getElementById('circularChart');
+
 
                 tbody.innerHTML = '';
                 divResultadosPregunta.innerHTML = '';
-
-
+                divGrafico.innerHTML = '';
+                
                 const pregunta = resultados.find(p => p.index == selectPreguntas.value);
                 console.log(pregunta);
+
+                dibujarGrafico(pregunta);
+
                 const tituloPregunta = document.createElement('h5');
                 tituloPregunta.textContent = pregunta.pregunta;
 
@@ -758,6 +860,8 @@
 
                     //tabla de respuestas: pestaña 2
                     dibujarResultadosTableResumen(respuesta, tbody);
+
+                    
 
                 });
             })
@@ -807,6 +911,36 @@
                 tbody.appendChild(trDefault);
             }
         }
+
+        function dibujarGrafico(pregunta){
+            google.charts.load('current', {'packages':['corechart']});
+            google.charts.setOnLoadCallback(()=>{
+                drawChart(pregunta)
+            });
+        }
+
+        function drawChart(pregunta) {
+            let datos = [];
+            datos[0] = ['respuesta', 'total'];
+            pregunta.respuestas.forEach(r => {
+                datos.push([r.respuesta, r.usuarios.length]);
+            })
+
+            console.log(datos);
+
+            // Set Data
+            const data = google.visualization.arrayToDataTable(datos);
+
+            // Set Options
+            const options = {
+                title: pregunta.pregunta
+            };
+
+            // Draw
+            const chart = new google.visualization.PieChart(document.getElementById('circularChart'));
+            chart.draw(data, options);
+
+        }
     </script>
 
     <script>
@@ -821,20 +955,148 @@
         const habilitarCheckbox = document.getElementById('habilitarRespuestaCorrecta');
         const respuestaSi = document.getElementById('respuestaCorrectaSi');
         const respuestaNo = document.getElementById('respuestaCorrectaNo');
+        let respuestasMultiples = [];
 
+
+        const checkboxHabilitarSiNo = document.getElementById('tipoSiNo');
+        const checkboxHabilitarMultiple = document.getElementById('tipoMultiple');
+        const divCheckRespuestaCorrecta = document.getElementById('divCheckHabilitarRespuestaCorrecta');
+        const opcionesSiNo = document.getElementById('opcionesSiNo');
+        const opcionesMultiples = document.getElementById('opcionesMultiples');
+        let contenedorRespuestas = document.getElementById('contenedorOpcionesMultiples');
+        const botonAgregarRespuesta = document.getElementById('btnAgregarOpcionRespuesta');
+
+        const inputsSiNoDisabled = document.querySelectorAll('.inputSiNoDisabled');
+        let checksRespuestaCorrecta = document.querySelectorAll('.checkedClass');
+
+        //modal de preguntas
+        const formRegistrarPregunta = document.getElementById('formPregunta');
+        const modalPreguntas = document.getElementById('modalRegistrarPreguntas');
+        const modalPreguntasInstance = new bootstrap.Modal(modalPreguntas);
+            
+        
+        
+
+        let indexOpcionesArray = 0;
         habilitarCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 respuestaSi.classList.remove('d-none');
                 respuestaNo.classList.remove('d-none');
+
+                respuestasMultiples.forEach(r => r.classList.remove('d-none'));
             } else {
                 respuestaSi.classList.add('d-none');
                 respuestaNo.classList.add('d-none');
+                respuestasMultiples.forEach(r => r.classList.add('d-none'));
 
                 // También desmarca cualquier selección previa
                 respuestaSi.querySelector('input').checked = false;
                 respuestaNo.querySelector('input').checked = false;
+                desmarcarChecksRespuestCorrecta();
             }
         });
+
+        function habilitarCheckRespuestaCorrecta(){
+            divCheckRespuestaCorrecta.classList.remove('d-none');
+        }
+
+        function desmarcarChecksRespuestCorrecta(){
+            checksRespuestaCorrecta.forEach(e => e.checked = false);
+        }
+
+        checkboxHabilitarSiNo.addEventListener('change', function(e){
+            indexOpcionesArray = 0;
+            
+            contenedorRespuestas.innerHTML = ``;
+            desmarcarChecksRespuestCorrecta();
+            
+            
+            inputsSiNoDisabled.forEach(e => e.disabled = false);
+            habilitarCheckRespuestaCorrecta();
+            opcionesSiNo.classList.remove('d-none');
+            opcionesMultiples.classList.add('d-none');
+        })
+
+        checkboxHabilitarMultiple.addEventListener('change', function(e){
+            desmarcarChecksRespuestCorrecta();
+            
+            inputsSiNoDisabled.forEach(e => e.disabled = true);
+            
+            habilitarCheckRespuestaCorrecta();
+            
+            opcionesMultiples.classList.remove('d-none');
+            opcionesSiNo.classList.add('d-none');
+
+            
+            agregarNuevaOpcionDeRespuesta();
+            agregarNuevaOpcionDeRespuesta();
+        });
+
+
+        botonAgregarRespuesta.addEventListener('click', function(){
+            agregarNuevaOpcionDeRespuesta();
+        })
+
+        function agregarNuevaOpcionDeRespuesta(){
+            const dnoneOrNo = (habilitarCheckbox.checked) ? '' : 'd-none';
+
+            const divPrincipal = document.createElement('div');
+            divPrincipal.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+            
+            const inputRespuesta = document.createElement('input');
+            inputRespuesta.type = 'text';
+            inputRespuesta.name = `opciones[${indexOpcionesArray}][texto]`;
+            inputRespuesta.placeholder = 'Escribe la respuesta...';
+
+            const divCheckRespuesta = document.createElement('div');
+            divCheckRespuesta.classList.add('form-check', 'correctasMultiples');
+            if (dnoneOrNo) {
+                divCheckRespuesta.classList.add(dnoneOrNo);
+            }
+            
+            const inputCheck = document.createElement('input');
+            inputCheck.classList.add('form-check-input', 'checkedClass');
+            inputCheck.type = 'checkbox';
+            inputCheck.name = `opciones[${indexOpcionesArray++}][is_correct]`
+            inputCheck.value = '1';
+
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.textContent = 'Correcta';
+
+            divCheckRespuesta.appendChild(inputCheck);
+            divCheckRespuesta.appendChild(label);
+
+            divPrincipal.appendChild(inputRespuesta);
+            divPrincipal.appendChild(divCheckRespuesta);
+
+            contenedorRespuestas.appendChild(divPrincipal);
+
+            respuestasMultiples = document.querySelectorAll('.correctasMultiples');
+            checksRespuestaCorrecta = document.querySelectorAll('.checkedClass')
+        }
+
+        document.getElementById('btnCerrarModalPregunta').addEventListener('click', function() {
+            cerrarModalFormPregunta(formRegistrarPregunta, modalPreguntasInstance);
+        })
+
+        function cerrarModalFormPregunta(formPregunta, modalPreguntasInstance) {
+            formPregunta.reset();
+            
+            if (!respuestaSi.classList.contains('d-none')) {
+                respuestaSi.classList.add('d-none');
+                respuestaNo.classList.add('d-none');
+            }
+            indexOpcionesArray = 0;
+            opcionesMultiples.classList.add('d-none');
+            opcionesSiNo.classList.add('d-none');
+            divCheckRespuestaCorrecta.classList.add('d-none');
+            contenedorRespuestas.innerHTML = ``;
+
+            modalPreguntasInstance.hide();
+        }
+
+        
     </script>
 </body>
 

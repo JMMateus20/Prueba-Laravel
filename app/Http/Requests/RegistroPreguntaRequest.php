@@ -25,8 +25,7 @@ class RegistroPreguntaRequest extends FormRequest
     {
         return [
             'enunciado'=>'required|string|max:255',
-            'opciones' =>'required|array|size:2', // Debe tener exactamente 2 opciones
-            'opciones.*.texto' =>'required|string|max:255'
+            'opciones' =>'required|array|min:2',
         ];
     }
 
@@ -35,6 +34,19 @@ class RegistroPreguntaRequest extends FormRequest
         $validator->after(function ($validator) {
             $habilitarRespuestaCorrecta = $this->input('habilitarRespuestaCorrecta');
             $opciones = $this->input('opciones', []);
+
+            $algunaOpcionSinTexto = false;
+
+            foreach ($opciones as $opcion) {
+                if (!isset($opcion['texto']) || trim($opcion['texto']) === '') {
+                    $algunaOpcionSinTexto = true;
+                    break;
+                }
+            }
+
+            if ($algunaOpcionSinTexto) {
+                $validator->errors()->add('opciones', 'Cada opción debe tener un texto definido.');
+            }
 
             if ($habilitarRespuestaCorrecta) {
                 $algunaCorrecta = false;
@@ -58,8 +70,7 @@ class RegistroPreguntaRequest extends FormRequest
         return [
             'enunciado.required' => 'Debe escribir el enunciado de la pregunta.',
             'opciones.required' => 'Debe proporcionar las opciones de respuesta.',
-            'opciones.size' => 'Debe proporcionar exactamente dos opciones de respuesta.',
-            'opciones.*.texto.required' => 'Cada opción debe tener un texto definido.'
+            'opciones.min' => 'Debe proporcionar minimo dos opciones de respuesta.'
         ];
     }
 
